@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["male", "female", "any"],
   },
+  google_id : {
+    type: String,
+  },
+  teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
   role: {
     type: String,
     enum: ["user", "manager", "admin"],
