@@ -78,7 +78,7 @@ router.post('/sign_up', async (req, res) => {
 // make for login here
 
 router.post('/login', async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   try {
     if (req.body.google_id) {
       const { email, name, google_id, profile_url } = req.body;
@@ -92,7 +92,7 @@ router.post('/login', async (req, res) => {
     } else {
       const { email, password } = req.body;
       const findUser = await User.findOne({"email": email});
-      console.log(findUser);
+      // console.log(findUser);
 
       if (findUser) {
         if (validatePassword(password, findUser.password)) {
@@ -110,6 +110,11 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ ok: false, msg: err });
   }
 });
+
+
+router.post('/edit_user_access' ,  async(req, res) => {
+  return res.status(200).json({ok : true , msg: "uPDATE" });
+})
 
 router.get('/users', async (req, res) => {
   try {
