@@ -5,7 +5,11 @@ const teamSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Name: {
+  profile_url : {
+    type: String,
+    default : "https://res.cloudinary.com/dqpirrbuh/image/upload/v1700758146/25726227_5000_2_08_vmuja3.jpg",
+  },
+  name: {
     type: String,
     required: true,
   },
@@ -13,6 +17,15 @@ const teamSchema = new mongoose.Schema({
   user_connector_id : {
       type: String,
       required: true,
+  },
+  domain : {
+    type: String,
+  },
+  plan : {
+    type: String,
+  },
+  country : {
+    type: String,
   },
   invitation_link: {
     type: String,

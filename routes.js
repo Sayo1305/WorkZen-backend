@@ -4,6 +4,7 @@ var logger = require('morgan');
 const  cors = require('cors');
 const { Mongoose } = require('./db');
 const userRouter = require('./routes/user');
+const teamRouter = require('./routes/team');
 
 module.exports = function(app){
     console.log('inside express use');
@@ -15,4 +16,6 @@ module.exports = function(app){
 
 //     User Router
     app.use('/api/user' , userRouter);
+
+    app.use('/api/team' , teamRouter);
 }
