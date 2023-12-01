@@ -3,6 +3,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Team = require('../model/Team');
 const User = require('../model/User');
+const mongoose = require('mongoose');
+
 
 const getUserId  = (token) => {
       const userid = jwt.verify(token , process.env.SECRET_KEY);
@@ -135,5 +137,38 @@ router.post('/remove_member', async (req, res) => {
         return res.status(500).json({ ok: false, msg: 'Internal server error' });
       }
 });
+
+router.get('/user_team', async (req, res) => {
+  let ownerId = null;
+
+  try {
+    // Extract user ID from the request header
+    ownerId = getUserId(req.headers['authorization'].replace('Bearer ', ''));
+  } catch (err) {
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: 'Authentication failed' });
+  }
+
+  try {
+  
+    const user = await User.find({user_id : ownerId}).lean().exec();
+
+    if (!user) {
+      return res.status(404).json({ ok: false, msg: 'User not found' });
+    }
+    console.log(user)
+
+    // Fetch the teams associated with the user
+    const teamIds = user[0].teams.map(teamId => new mongoose.Types.ObjectId(teamId));
+
+    // Fetch the teams associated with the user
+    const teams = await Team.find({ _id: { $in: teamIds } });
+    return res.status(200).json({ ok: true, teams });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ ok: false, msg: 'Internal server error' });
+  }
+});
+
 
 module.exports = router;

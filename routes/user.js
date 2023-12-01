@@ -23,7 +23,7 @@ const validatePassword = (password, hash) => {
 
 const getUserId = (token) => {
   const userid = jwt.verify(token, process.env.SECRET_KEY);
-  return userid?.userId
+  return userid?.userId;
 }
 
 router.post('/sign_up', async (req, res) => {
@@ -86,8 +86,8 @@ router.post('/login', async (req, res) => {
       if(!already_user){
         return res.status(400).json({ ok: false, msg: "User must sign up first" });
       }
-      const hashToken = jwt.sign({ userId: already_user.user_id }, process.env.SECRET_KEY);
-      return res.status(201).json({ ok: true, msg: "User created successfully", data: { hashToken, already_user } });
+      const hashToken = jwt.sign({ userId: already_user[0].user_id }, process.env.SECRET_KEY);
+      return res.status(201).json({ ok: true, msg: "User created successfully", data: { hashToken, user :  already_user } });
 
     } else {
       const { email, password } = req.body;
@@ -96,8 +96,8 @@ router.post('/login', async (req, res) => {
 
       if (findUser) {
         if (validatePassword(password, findUser.password)) {
-          const hashToken = jwt.sign({ userId: user_id }, process.env.SECRET_KEY);
-          return res.status(201).json({ ok: true, msg: "User created successfully", data: { hashToken, findUser } });
+          const hashToken = jwt.sign({ userId: findUser.user_id }, process.env.SECRET_KEY);
+          return res.status(201).json({ ok: true, msg: "User created successfully", data: { hashToken, user :  findUser } });
         } else {
           return res.status(404).json({ ok: false, msg: "wrong password" });
         }
@@ -112,15 +112,24 @@ router.post('/login', async (req, res) => {
 });
 
 
-router.post('/edit_user_access' ,  async(req, res) => {
-  return res.status(200).json({ok : true , msg: "uPDATE" });
-})
-
-router.get('/users', async (req, res) => {
+router.get('/get_users', async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+      var user_id = null;
+      try{
+            user_id = getUserId(
+                  req.headers["authorization"].replace("Bearer ", "")
+            );
+      }catch(err){
+            console.log(err);
+            return res.status(401).json({ok : false , msg : "Authentication failed"});
+      }
+    const users = await User.find({user_id  : user_id});
+    if(!users){
+      return res.status(404).json({ok : false , msg : "user not found"});
+    }
+    return res.status(200).json({ok : true , data : users});
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message });
   }
 });
