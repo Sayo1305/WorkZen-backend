@@ -27,6 +27,10 @@ const teamSchema = new mongoose.Schema({
   country : {
     type: String,
   },
+  total_jobs: {
+    type : Number,
+    default : 0,
+  },
   invitation_link: {
     type: String,
     default :  Date.now().toString().substring(6),
@@ -35,6 +39,10 @@ const teamSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  last_updated : {
+    type: Date,
+    default: Date.now,
+  }
 });
 
 const Team = mongoose.model("Team", teamSchema);
