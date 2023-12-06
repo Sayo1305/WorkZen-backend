@@ -167,4 +167,21 @@ router.post("/get_issue_category", async (req, res) => {
   }
 });
 
+router.get('/get_job_by_user' , async(req , res) => {
+  var user_id = null;
+  try {
+    user_id = getUserId(req.headers["authorization"].replace("Bearer ", ""));
+  } catch (err) {
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+
+  const ownerUser = await User.findOne({user_id : user_id});
+  if(!ownerUser){
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+  const userJobs = await Job.find({ assign_to: ownerUser?._id });
+  console.log(userJobs)
+  return res.status(200).json({ok : true , data : userJobs});
+})
 module.exports = router;
