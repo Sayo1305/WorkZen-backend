@@ -180,8 +180,32 @@ router.get('/get_job_by_user' , async(req , res) => {
   if(!ownerUser){
     return res.status(401).json({ ok: false, msg: "Authentication failed" });
   }
-  const userJobs = await Job.find({ assign_to: ownerUser?._id });
-  console.log(userJobs)
+  const userJobs = await Job.find({ assign_to: ownerUser?._id }).populate("team_id");
+  // console.log(userJobs)
   return res.status(200).json({ok : true , data : userJobs});
 })
+
+router.get('/get_job_by_team/:team_id' , async(req , res) => { 
+  var user_id = null;
+  try {
+    user_id = getUserId(req.headers["authorization"].replace("Bearer ", ""));
+  } catch (err) {
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+
+  try{
+    const team_id = req.params.team_id;
+    const team = await Team.find({team_id : team_id});
+    if (!team) {
+      return res.status(404).json({ ok: false, msg: "Team not found" });
+    }
+    const jobs = await Job.find({ team_id: team._id });
+    res.status(200).json({ ok: true, jobs: jobs });
+  }catch(err){
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+});
+
 module.exports = router;

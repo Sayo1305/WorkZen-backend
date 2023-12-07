@@ -7,8 +7,12 @@ const mongoose = require("mongoose");
 const { SendJoinTeamEmail } = require("../utility/sendEmail");
 
 const getUserId = (token) => {
-  const userid = jwt.verify(token, process.env.SECRET_KEY);
-  return userid?.userId;
+  try{
+    const userid = jwt.verify(token, process.env.SECRET_KEY);
+    return userid?.userId;
+  }catch(e){
+    console.log("Error in jwt");
+  }
 };
 
 router.post("/create_team", async (req, res) => {
