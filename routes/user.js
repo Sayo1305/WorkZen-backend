@@ -134,4 +134,46 @@ router.get('/get_users', async (req, res) => {
   }
 });
 
+
+router.post('/update_user', async (req, res) => {
+  try {
+    let user_id = null;
+    try {
+      user_id = getUserId(req.headers["authorization"].replace("Bearer ", ""));
+    } catch (err) {
+      console.log(err);
+      return res.status(401).json({ ok: false, msg: "Authentication failed" });
+    }
+
+    const updates = req.body; // Assuming the updates come in the request body
+// console.log("jdiodjiodjid")
+    // Remove empty fields from updates
+    Object.keys(updates).forEach(key => {
+      if (updates[key] === '' || updates[key] === undefined || updates[key] === null) {
+        delete updates[key];
+      }
+    });
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ ok: false, msg: "No valid updates provided" });
+    }
+
+    const updatedUser = await User.findOneAndUpdate({ user_id: user_id }, updates, {
+      new: true,
+    });
+
+    // console.log(updatedUser)
+
+    if (!updatedUser) {
+      return res.status(404).json({ ok: false, msg: "User not found" });
+    }
+
+    return res.status(200).json({ ok: true, updatedUser });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ ok: false, msg: "Internal server error" });
+  }
+});
+
+
 module.exports = router;

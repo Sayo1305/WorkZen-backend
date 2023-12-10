@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema({
   job_profile: {
     type: String,
   },
+  organisation : {
+    type: String,
+  },
+  location : {
+    type: String,
+  },
   created_at: {
     type: Date,
     default: Date.now,

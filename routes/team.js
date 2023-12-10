@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const Team = require("../model/Team");
 const User = require("../model/User");
 const mongoose = require("mongoose");
-const { SendJoinTeamEmail } = require("../utility/sendEmail");
+const { SendJoinTeamEmail, SendInviteEmail } = require("../utility/sendEmail");
 
 const getUserId = (token) => {
   try{
@@ -82,7 +82,7 @@ router.post("/add_team", async (req, res) => {
     // Add the team to the user's teams
     user.teams.push(team_id);
     await user.save();
-
+    await  SendJoinTeamEmail(user?.email  , team.name , "http://localhost:3000/login");
     return res.status(200).json({ ok: true, msg: "User added to the team successfully" });
   } catch (error) {
     console.error(error);
@@ -144,13 +144,17 @@ router.post("/add_via_invite", async (req, res) => {
     console.log(err);
     return res.status(401).json({ ok: false, msg: "Authentication failed" });
   }
-  const { invite_link , url } = req.body;
+  const {email ,  invite_link , url } = req.body;
 
   const findTeam = await Team.findOne({ invitation_link: invite_link });
   if (!findTeam) {
-    res.status(404).json({ ok: false, msg: "Team not found" });
+    return res.status(404).json({ ok: false, msg: "Team not found" });
   }
-  const user = await User.findOne({user_id : user_id}).populate("teams");
+  const user = await User.findOne({email : email}).populate("teams");
+  // console.log(user)
+  if(user === null){
+    return res.status(404).json({ ok: false, msg: "user not found" });
+  }
   if (user.teams.some(team => team.invitation_link === invite_link)) {
     return res.status(400).json({ ok: false, msg: "User is already a member of the team" });
   }
@@ -160,7 +164,7 @@ router.post("/add_via_invite", async (req, res) => {
   // Add the team to the user's teams
   user.teams.push(findTeam?._id);
   await user.save();
-  await  SendJoinTeamEmail(user?.email ,findTeam?.name , url);
+  await  SendInviteEmail(user?.email ,findTeam?.name , url , invite_link);
   return res.status(200).json({ ok: true, msg: "User added to the team successfully" });
 });
 
@@ -224,7 +228,8 @@ router.get("/team_members/:team_id", async (req, res) => {
 
     // Fetch the team members with only the required fields
     const teamMembers = await Team.findOne({ team_id: teamId })
-      .populate({ path: "members", select: "name user_id profile_url -_id" })
+      .populate({ path: "members", 
+      select: "name user_id profile_url job_profile -_id" })
       .lean()
       .exec();
 
