@@ -290,6 +290,7 @@ router.post('/team_overview', async (req, res) => {
     if(!user){
       return res.status(403).json({ ok: false, msg: 'Permission denied' });
     }
+    const owner = await User.findOne({user_id : team?.user_connector_id});
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -356,6 +357,7 @@ router.post('/team_overview', async (req, res) => {
       totalProcessingJobs,
       totalCompleteJobs,
       recentJobs,
+      owner,
       totalLowPriorityJobs,
       totalMediumPriorityJobs,
       totalHighPriorityJobs,
