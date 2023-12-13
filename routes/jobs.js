@@ -208,4 +208,38 @@ router.get('/get_job_by_team/:team_id' , async(req , res) => {
   }
 });
 
+router.post('/update_job_status' , async(req  , res) =>{
+  var user_id = null;
+  try {
+    user_id = getUserId(req.headers["authorization"].replace("Bearer ", ""));
+  } catch (err) {
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+  try{
+    const { job_id , status } = req.body;
+    if (!job_id || !status) {
+      return res.status(400).json({ ok: false, msg: 'Invalid request data' });
+    }
+
+    // Check if the user has permission to update the job (you need to implement this logic)
+    const job = await Job.findOne({ job_id: job_id });
+
+    if (!job) {
+      return res.status(403).json({ ok: false, msg: 'Permission denied' });
+    }
+
+    // Update the job status
+    job.status = status;
+    await job.save();
+
+    return res.json({ ok: true, msg: 'Job status updated successfully' });
+
+  }catch(err){
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: "Authentication failed" });
+  }
+})
+
+
 module.exports = router;

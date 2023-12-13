@@ -5,6 +5,7 @@ const Team = require("../model/Team");
 const User = require("../model/User");
 const mongoose = require("mongoose");
 const { SendJoinTeamEmail, SendInviteEmail } = require("../utility/sendEmail");
+const Job = require("../model/Job");
 
 const getUserId = (token) => {
   try{
@@ -180,23 +181,37 @@ router.get("/user_team", async (req, res) => {
   }
 
   try {
-    const user = await User.find({ user_id: ownerId }).lean().exec();
+    const user = await User.findOne({ user_id: ownerId }).lean().exec();
 
     if (!user) {
       return res.status(404).json({ ok: false, msg: "User not found" });
     }
 
     // Fetch the teams associated with the user
-    const teamIds = user[0].teams.map((teamId) => new mongoose.Types.ObjectId(teamId));
+    const teamIds = user.teams.map((teamId) => new mongoose.Types.ObjectId(teamId));
 
     // Fetch the teams associated with the user
     const teams = await Team.find({ _id: { $in: teamIds } });
-    return res.status(200).json({ ok: true, teams });
+
+    // Include user_connector_id and user details in the response
+    const teamsWithUsers = teams.map((team) => ({
+      ...team.toObject(),
+      user_connector_id: user.user_id,
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profile_url: user.profile_url,
+      },
+    }));
+
+    return res.status(200).json({ ok: true, teams: teamsWithUsers });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ ok: false, msg: "Internal server error" });
   }
 });
+
 
 router.get("/team_members/:team_id", async (req, res) => {
   let ownerId = null;
@@ -244,5 +259,110 @@ router.get("/team_members/:team_id", async (req, res) => {
   }
 });
 
+
+router.post('/team_overview', async (req, res) => {
+  let ownerId = null;
+  try {
+    // Extract user ID from the request header
+    ownerId = getUserId(req.headers['authorization'].replace('Bearer ', ''));
+  } catch (err) {
+    console.log(err);
+    return res.status(401).json({ ok: false, msg: 'Authentication failed' });
+  }
+
+  try {
+    const  {team_id}  = req.body;
+    // console.log(team_id)
+    // Validate team_id
+    if (!team_id) {
+      return res.status(400).json({ ok: false, msg: 'Invalid request data' });
+    }
+
+    // Check if the user is a member of the specified team
+    const team = await Team.findOne({ team_id: team_id});
+    // console.log(team)
+    if (!team) {
+      return res.status(403).json({ ok: false, msg: 'Permission denied' });
+    }
+
+    const user = await User.findOne({user_id : ownerId});
+    if(!user){
+      return res.status(403).json({ ok: false, msg: 'Permission denied' });
+    }
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Queries
+    const completeJobsLast7Days = await Job.countDocuments({
+      _id : team._id,
+      status: 'complete',
+      created_at: { $gte: sevenDaysAgo },
+    });
+
+    const createdJobsLast7Days = await Job.countDocuments({
+      team_id: team._id,
+      created_at: { $gte: sevenDaysAgo },
+    });
+
+    const pendingJobsLast7Days = await Job.countDocuments({
+      team_id: team._id,
+      status: 'pending',
+      created_at: { $gte: sevenDaysAgo },
+    });
+
+    const totalPendingJobs = await Job.countDocuments({
+      team_id: team._id,
+      status: 'pending',
+    });
+
+    const totalProcessingJobs = await Job.countDocuments({
+      team_id: team._id,
+      status: 'processing',
+    });
+
+    const totalCompleteJobs = await Job.countDocuments({
+      team_id: team._id,
+      status: 'complete',
+    });
+
+    const recentJobs = await Job.find({
+      user_connector_id: user?._id,
+      created_at: { $gte: sevenDaysAgo },
+    }).sort({ created_at: -1 }).limit(7);
+
+    const totalLowPriorityJobs = await Job.countDocuments({
+      team_id: team._id,
+      Priority: 'Low',
+    });
+
+    const totalMediumPriorityJobs = await Job.countDocuments({
+      team_id: team._id,
+      Priority: 'Medium',
+    });
+
+    const totalHighPriorityJobs = await Job.countDocuments({
+      team_id: team._id,
+      Priority: 'High',
+    });
+
+    // Response
+    return res.json({
+      completeJobsLast7Days,
+      createdJobsLast7Days,
+      pendingJobsLast7Days,
+      totalPendingJobs,
+      totalProcessingJobs,
+      totalCompleteJobs,
+      recentJobs,
+      totalLowPriorityJobs,
+      totalMediumPriorityJobs,
+      totalHighPriorityJobs,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, msg: 'Internal server error' });
+  }
+});
 
 module.exports = router;
