@@ -196,7 +196,6 @@ router.get("/user_team", async (req, res) => {
     // Include user_connector_id and user details in the response
     const teamsWithUsers = teams.map((team) => ({
       ...team.toObject(),
-      user_connector_id: user._id,
       user: {
         name: user.name,
         email: user.email,
