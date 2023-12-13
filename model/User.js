@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Name: {
+  name: {
     type: String,
     required: true,
   },
@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema({
     default: "user",
   },
   job_profile: {
+    type: String,
+  },
+  organisation : {
+    type: String,
+  },
+  location : {
     type: String,
   },
   created_at: {
