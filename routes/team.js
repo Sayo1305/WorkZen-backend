@@ -187,22 +187,24 @@ router.get("/user_team", async (req, res) => {
       return res.status(404).json({ ok: false, msg: "User not found" });
     }
 
-    // Fetch the teams associated with the user
     const teamIds = user.teams.map((teamId) => new mongoose.Types.ObjectId(teamId));
 
-    // Fetch the teams associated with the user
-    const teams = await Team.find({ _id: { $in: teamIds } });
+   // Fetch the teams associated with the user, including user_connector_id
+   const teams = await Team.find({ _id: { $in: teamIds } }).lean().exec();
 
-    // Include user_connector_id and user details in the response
-    const teamsWithUsers = teams.map((team) => ({
-      ...team.toObject(),
-      user: {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile_url: user.profile_url,
-      },
-    }));
+   // Fetch users based on user_connector_id
+   const users = await User.find({ user_id: { $in: teams.map(team => team.user_connector_id) } }).lean().exec();
+
+   // Create a map for easy user lookup
+   const userMap = new Map(users.map(user => [user.user_id, user]));
+
+   // Include user details in the response for each team
+   const teamsWithUsers = teams.map((team) => ({
+     ...team,
+     user: userMap.get(team.user_connector_id),
+   }));
+
+   return res.status(200).json({ ok: true, teams: teamsWithUsers });
 
     return res.status(200).json({ ok: true, teams: teamsWithUsers });
   } catch (error) {
